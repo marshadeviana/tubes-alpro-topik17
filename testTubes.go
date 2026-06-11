@@ -2,6 +2,10 @@ package main
 
 import "fmt"
 
+func Clear() {
+	fmt.Printf("\x1bc")
+}
+
 type pengguna struct {
 	hariKe  int
 	durasi  int
@@ -20,14 +24,16 @@ var stop bool
 
 func main() {
 	N = 0 // Inisialisasi data awal dari 0
+
 	for !stop {
 		menu()
 	}
 }
-
 func menu() {
 	var Nomor int
+	var err error
 
+	Clear()
 	fmt.Println("-------------")
 	fmt.Println("    Menu")
 	fmt.Println("-------------")
@@ -43,7 +49,20 @@ func menu() {
 	fmt.Println("10. Tampilkan Semua Data")
 	fmt.Println("11. Exit")
 	fmt.Print("Pilih menu 1-11: ")
-	fmt.Scan(&Nomor)
+
+	// Menggunakan Scanln agar menangkap enter dengan baik
+	_, err = fmt.Scanln(&Nomor)
+
+	if err != nil {
+
+		fmt.Println("\n[!] Error: Input harus berupa angka 1-11!")
+
+		// Membersihkan sisa huruf/karakter sampah di buffer terminal
+		var dump string
+		fmt.Scanln(&dump)
+		return
+	}
+
 	switch Nomor {
 	case 1:
 		addData(&P, &N)
@@ -66,8 +85,11 @@ func menu() {
 	case 10:
 		fmt.Println("\n--- Seluruh Data Workout ---")
 		showData(P, N)
-	default:
+	case 11:
+		fmt.Println("Keluar dari program...")
 		stop = true
+	default:
+		fmt.Println("Pilihan tidak valid! Silakan pilih 1-11.")
 	}
 }
 
@@ -78,23 +100,36 @@ func addData(w *workout, n *int) {
 		fmt.Println("=======================")
 		fmt.Println("   Menambahkan Data    ")
 		fmt.Println("=======================")
-		
-		// Hari ke otomatis ditentukan dari jumlah data saat ini + 1
-		w[*n].hariKe = *n + 1 
+
+		w[*n].hariKe = *n + 1
 		fmt.Println("Masukkan data hari ke-", w[*n].hariKe)
-		
+
 		fmt.Print("Masukkan jadwal latihan (DDMMYYYY): ")
 		fmt.Scan(&w[*n].tanggal)
 		fmt.Print("Masukkan jenis latihan: ")
 		fmt.Scan(&w[*n].jenis)
+
+		// VALIDASI DURASI: Diulang terus selama input kurang dari atau sama dengan 0
 		fmt.Print("Masukkan durasi latihan (menit): ")
 		fmt.Scan(&w[*n].durasi)
+		for w[*n].durasi <= 0 {
+			fmt.Println("[!] Error: Durasi latihan harus lebih dari 0 menit!")
+			fmt.Print("Masukkan kembali durasi latihan (menit): ")
+			fmt.Scan(&w[*n].durasi)
+		}
+
+		// VALIDASI KALORI: Diulang terus selama input kurang dari atau sama dengan 0
 		fmt.Print("Masukkan total kalori: ")
 		fmt.Scan(&w[*n].kalori)
+		for w[*n].kalori <= 0 {
+			fmt.Println("[!] Error: Total kalori harus lebih dari 0!")
+			fmt.Print("Masukkan kembali total kalori: ")
+			fmt.Scan(&w[*n].kalori)
+		}
 		fmt.Println()
-		
+
 		*n++
-		
+
 		fmt.Print("Ketik 1 untuk menambah data lagi, 0 untuk keluar: ")
 		fmt.Scan(&pilih)
 		fmt.Println()
@@ -103,11 +138,15 @@ func addData(w *workout, n *int) {
 
 // Poin C: Sequential Search berdasarkan Jenis Olahraga
 func cariOlahragaSequential(w workout, n int) {
+	if n == 0 {
+		fmt.Println("Belum ada data workout untuk dicari. Silakan isi data dulu!")
+		return
+	}
+
 	var x string
 	var found bool = false
 	fmt.Print("Jenis olahraga yang ingin dicari (Sequential): ")
 	fmt.Scan(&x)
-	
 	fmt.Printf("| %-10s | %-9s | %-20s | %-7s | %-7s |\n", "Hari ke-", "Tanggal", "Latihan", "Durasi", "Kalori")
 	for i := 0; i < n; i++ {
 		if w[i].jenis == x {
@@ -135,6 +174,11 @@ func sortAlphabet(w *workout, n int) {
 
 // Poin C: Binary Search berdasarkan Jenis Olahraga
 func cariOlahragaBinary(w workout, n int) {
+	if n == 0 {
+		fmt.Println("Belum ada data workout untuk dicari. Silakan isi data dulu!")
+		return
+	}
+
 	var x string
 	fmt.Print("Jenis olahraga yang ingin dicari (Binary): ")
 	fmt.Scan(&x)
@@ -162,7 +206,7 @@ func cariOlahragaBinary(w workout, n int) {
 	} else {
 		fmt.Println("Data ditemukan (Hasil setelah data diurutkan berdasarkan alfabet):")
 		fmt.Printf("| %-10s | %-9s | %-20s | %-7s | %-7s |\n", "Hari ke-", "Tanggal", "Latihan", "Durasi", "Kalori")
-		
+
 		// Menampilkan semua data yang sama di sekitar indeks yang ditemukan
 		// Melangkah ke kiri untuk mencari batas awal olahraga yang sama
 		start := idx
@@ -191,24 +235,23 @@ func showData(w workout, n int) {
 func editData(w *workout, n int) {
 	var targetHari, pilihan, edit int
 	var idx int = -1
-	
+
 	if n == 0 {
 		fmt.Println("Belum ada data untuk diedit.")
 		return
 	}
-	
+
 	showData(*w, n)
 	fmt.Print("Pilih data Hari ke- berapa yang ingin diedit: ")
 	fmt.Scan(&targetHari)
-	
-	// Cari indeks yang memiliki hariKe sesuai input
+
 	for i := 0; i < n; i++ {
 		if w[i].hariKe == targetHari {
 			idx = i
 			break
 		}
 	}
-	
+
 	if idx == -1 {
 		fmt.Println("Hari tidak ditemukan!")
 		return
@@ -216,7 +259,7 @@ func editData(w *workout, n int) {
 
 	fmt.Printf("| %-10s | %-9s | %-20s | %-7s | %-7s |\n", "Hari ke-", "Tanggal", "Latihan", "Durasi", "Kalori")
 	fmt.Printf("| %-10d | %-9s | %-20s | %-7d | %-7d |\n", w[idx].hariKe, w[idx].tanggal, w[idx].jenis, w[idx].durasi, w[idx].kalori)
-	
+
 	fmt.Print("Pilih 1 untuk edit keseluruhan, 0 untuk edit sebagian: ")
 	fmt.Scan(&edit)
 	if edit == 1 {
@@ -224,10 +267,24 @@ func editData(w *workout, n int) {
 		fmt.Scan(&w[idx].tanggal)
 		fmt.Print("Jenis olahraga baru: ")
 		fmt.Scan(&w[idx].jenis)
+
+		// Validasi durasi pada edit keseluruhan
 		fmt.Print("Durasi baru: ")
 		fmt.Scan(&w[idx].durasi)
+		for w[idx].durasi <= 0 {
+			fmt.Println("[!] Error: Durasi latihan harus lebih dari 0 menit!")
+			fmt.Print("Masukkan kembali durasi baru: ")
+			fmt.Scan(&w[idx].durasi)
+		}
+
+		// Validasi kalori pada edit keseluruhan
 		fmt.Print("Kalori baru: ")
 		fmt.Scan(&w[idx].kalori)
+		for w[idx].kalori <= 0 {
+			fmt.Println("[!] Error: Total kalori harus lebih dari 0!")
+			fmt.Print("Masukkan kembali kalori baru: ")
+			fmt.Scan(&w[idx].kalori)
+		}
 	} else if edit == 0 {
 		fmt.Println("Pilih bagian yang ingin diedit: ")
 		fmt.Println("1. Ubah tanggal")
@@ -245,11 +302,23 @@ func editData(w *workout, n int) {
 			fmt.Print("Masukkan jenis olahraga yang baru: ")
 			fmt.Scan(&w[idx].jenis)
 		case 3:
+			// Validasi durasi pada edit sebagian
 			fmt.Print("Masukkan durasi yang baru: ")
 			fmt.Scan(&w[idx].durasi)
+			for w[idx].durasi <= 0 {
+				fmt.Println("[!] Error: Durasi latihan harus lebih dari 0 menit!")
+				fmt.Print("Masukkan kembali durasi yang baru: ")
+				fmt.Scan(&w[idx].durasi)
+			}
 		case 4:
+			// Validasi kalori pada edit sebagian
 			fmt.Print("Masukkan jumlah kalori yang baru: ")
 			fmt.Scan(&w[idx].kalori)
+			for w[idx].kalori <= 0 {
+				fmt.Println("[!] Error: Total kalori harus lebih dari 0!")
+				fmt.Print("Masukkan kembali jumlah kalori yang baru: ")
+				fmt.Scan(&w[idx].kalori)
+			}
 		}
 	}
 }
@@ -257,23 +326,23 @@ func editData(w *workout, n int) {
 func hapusData(w *workout, n *int) {
 	var targetHari int
 	var idx int = -1
-	
+
 	if *n == 0 {
 		fmt.Println("Belum ada data untuk dihapus.")
 		return
 	}
-	
+
 	showData(*w, *n)
 	fmt.Print("Pilih data Hari ke- berapa yang ingin dihapus: ")
 	fmt.Scan(&targetHari)
-	
+
 	for i := 0; i < *n; i++ {
 		if w[i].hariKe == targetHari {
 			idx = i
 			break
 		}
 	}
-	
+
 	if idx == -1 {
 		fmt.Println("Hari tidak ditemukan!")
 		return
@@ -293,7 +362,7 @@ func rekomendasi(w workout, n int) {
 		fmt.Println("Belum ada riwayat olahraga. Silakan tambahkan data terlebih dahulu.")
 		return
 	}
-	
+
 	fmt.Println("Rekomendasi workout berdasarkan pola 3 latihan terakhir Anda: ")
 	if n >= 3 {
 		for i := n - 3; i < n; i++ {
@@ -314,7 +383,7 @@ func sortKalori(A workout, n int) {
 		fmt.Println("Belum ada data untuk diurutkan.")
 		return
 	}
-	
+
 	for i := 0; i < n-1; i++ {
 		idxMax := i
 		for j := i + 1; j < n; j++ {
@@ -337,7 +406,7 @@ func sortDurasi(A workout, n int) {
 		fmt.Println("Belum ada data untuk diurutkan.")
 		return
 	}
-	
+
 	for pass := 1; pass < n; pass++ {
 		i := pass
 		temp := A[pass]
@@ -358,7 +427,7 @@ func menuLaporan(w workout, n int) {
 		fmt.Println("Belum ada data aktivitas untuk membuat laporan.")
 		return
 	}
-	
+
 	fmt.Println("\n==========================")
 	fmt.Println("      MENU LAPORAN        ")
 	fmt.Println("==========================")
@@ -366,7 +435,7 @@ func menuLaporan(w workout, n int) {
 	fmt.Println("2. Total Kalori dalam Periode Tertentu")
 	fmt.Print("Pilih opsi laporan (1-2): ")
 	fmt.Scan(&opsi)
-	
+
 	switch opsi {
 	case 1:
 		// Menampilkan maksimal 10 aktivitas terakhir yang dilakukan pengguna
@@ -379,18 +448,18 @@ func menuLaporan(w workout, n int) {
 		for i := start; i < n; i++ {
 			fmt.Printf("| %-10d | %-9s | %-20s | %-7d | %-7d |\n", w[i].hariKe, w[i].tanggal, w[i].jenis, w[i].durasi, w[i].kalori)
 		}
-		
+
 	case 2:
 		// Menghitung total kalori pada rentang tanggal/periode tertentu
 		var tglMulai, tglSelesai string
 		var totalKalori int = 0
 		var found bool = false
-		
+
 		fmt.Print("Masukkan tanggal mulai (DDMMYYYY): ")
 		fmt.Scan(&tglMulai)
 		fmt.Print("Masukkan tanggal selesai (DDMMYYYY): ")
 		fmt.Scan(&tglSelesai)
-		
+
 		for i := 0; i < n; i++ {
 			// Melakukan pengecekan sederhana apakah tanggal data berada di dalam rentang input pengguna
 			// Catatan: Karena format string DDMMYYYY, pencocokan idealnya dilakukan berurutan berdasarkan indeks data yang terinput kronologis
@@ -399,7 +468,7 @@ func menuLaporan(w workout, n int) {
 				found = true
 			}
 		}
-		
+
 		if found {
 			fmt.Printf("Total kalori yang terbakar dari periode %s s/d %s adalah: %d kalori\n", tglMulai, tglSelesai, totalKalori)
 		} else {
